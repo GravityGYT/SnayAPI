@@ -1,15 +1,3 @@
-// ==UserScript==
-// @name         Snay.io Public Skins Drawer with Profile Menu, Lazy Loading, and Navbar Button
-// @namespace    http://tampermonkey.net/
-// @version      6.4
-// @description  Snay.io Public Lib
-// @author       GravityG
-// @match        https://www.snay.io/*
-// @grant        none
-// @require      https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
-// ==/UserScript==
-
-(function () {
     'use strict';
 
     // Add Bootstrap CSS to the document head

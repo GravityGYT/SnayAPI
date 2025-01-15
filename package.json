@@ -1,0 +1,14 @@
+{
+    "name": "skins-api",
+    "version": "1.0.0",
+    "description": "A Vercel project to serve skins via an API using a static JSON file.",
+    "main": "api/skins.js",
+    "scripts": {
+      "start": "vercel dev",
+      "deploy": "vercel"
+    },
+    "dependencies": {},
+    "devDependencies": {},
+    "license": "MIT"
+  }
+  

@@ -3,8 +3,8 @@ import { MongoClient } from "mongodb";
 export default async function handler(req, res) {
     try {
         const client = await MongoClient.connect(process.env.MONGO_URI, { useUnifiedTopology: true });
-        const db = client.db("Snayskins"); // Ensure this matches your database name
-        const collection = db.collection("skins"); // Ensure this matches your collection name
+        const db = client.db("SnayAPI"); // Ensure this matches your database name
+        const collection = db.collection("SkinList"); // Ensure this matches your collection name
 
         const skins = await collection.find({}).toArray();
         res.status(200).json(skins);

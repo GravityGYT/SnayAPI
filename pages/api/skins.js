@@ -12,7 +12,7 @@ export default async function handler(req, res) {
             cachedClient = await MongoClient.connect(process.env.MONGO_URI, { useUnifiedTopology: true });
         }
 
-        const db = cachedClient.db("Snayskins"); // Database name
+        const db = cachedClient.db("SkinList"); // Database name
         const collection = db.collection("skins"); // Collection name
 
         // Fetch all documents from the "skins" collection

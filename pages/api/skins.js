@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 
-const MONGO_URI = "mongodb+srv://HarryG:241198he@snayapi.zw9eu.mongodb.net/Snayskins?retryWrites=true&w=majority";
+const MONGO_URI = "process.env.MONGO_URI";
 
 // Cached connection to reuse for performance
 let cachedClient = null;
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     try {
         // Connect to MongoDB only if not already connected
         if (!cachedClient) {
-            cachedClient = await MongoClient.connect(process.env.MONGO_URI, { useUnifiedTopology: true });
+            cachedClient = await MongoClient.connect(MONGO_URI, { useUnifiedTopology: true });
         }
 
         const db = cachedClient.db("SkinList"); // Database name

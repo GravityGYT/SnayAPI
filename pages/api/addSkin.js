@@ -35,6 +35,14 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "Fields 'name' and 'url' are required." });
         }
 
+        // Validate URL format
+        const validImgurUrl = /^https:\/\/i\.imgur\.com\/.*\.png$/;
+        if (!validImgurUrl.test(url)) {
+            return res.status(400).json({
+                error: "URL must start with 'https://i.imgur.com' and end with '.png'.",
+            });
+        }
+
         // Generate a random string for _id
         const _id = nanoid(10); // Generates a random string with a length of 10 characters
 

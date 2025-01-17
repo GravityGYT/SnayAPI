@@ -50,7 +50,7 @@ export default async function handler(req, res) {
             }
 
             // Insert new skin into the database
-            const newSkin = { name, url, createdAt: new Date() };
+            const newSkin = { name, url, owner, createdAt: new Date() };
             const result = await collection.insertOne(newSkin);
 
             return res.status(201).json({

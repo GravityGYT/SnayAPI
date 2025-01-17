@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         }
 
         if (req.method === "POST") {
-            const { name, url } = req.body;
+            const { name, url, owner } = req.body;
 
             // Validate the POST request body
             if (!name || !url) {

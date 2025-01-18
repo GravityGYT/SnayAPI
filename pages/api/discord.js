@@ -47,8 +47,12 @@ export default async function handler(req, res) {
 
             const userData = await userResponse.json();
 
-            // Redirect back to the main page with user info in query parameters
-            return res.redirect(`https://snay.io/?username=${encodeURIComponent(userData.username)}`);
+            // Redirect back to the main page with user info and token in query parameters
+            return res.redirect(
+                `https://snay.io/?username=${encodeURIComponent(userData.username)}&token=${encodeURIComponent(
+                    tokenData.access_token
+                )}`
+            );
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Internal Server Error" });

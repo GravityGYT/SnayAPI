@@ -1,10 +1,8 @@
 import { MongoClient } from "mongodb";
 import { nanoid } from "nanoid";
-import fetch from "node-fetch"; // Ensure node-fetch is installed
 
 // Environment variables
 const MONGO_URI = process.env.MONGO_URI; // MongoDB connection string
-const IMGUR_CLIENT_ID = process.env.IMGUR_CLIENT_ID; // Imgur Client ID for non-authenticated uploads
 
 let cachedClient = null;
 
@@ -24,50 +22,22 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { name, owner, image, url } = req.body;
+        const { name, owner, url } = req.body;
 
         // Validate required fields
-        if (!name || !owner || (!image && !url)) {
+        if (!name || !owner || !url) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        let finalUrl;
+        // Validate that the URL starts with https://i.imgur.com
+        if (!url.startsWith("https://i.imgur.com")) {
+            return res.status(400).json({ error: "URL must start with https://i.imgur.com" });
+        }
 
-        // If an image is provided, upload it to Imgur
-        if (image) {
-            console.log("Uploading image to Imgur...");
-
-            const imgurResponse = await fetch("https://api.imgur.com/3/image", {
-                method: "POST",
-                headers: {
-                    Authorization: `Client-ID ${IMGUR_CLIENT_ID}`, // Use Client-ID for non-authenticated uploads
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ image, type: "base64" }), // Image in Base64 format
-            });
-
-            if (!imgurResponse.ok) {
-                console.error("Imgur upload failed:", await imgurResponse.text());
-                return res.status(500).json({ error: "Failed to upload image to Imgur" });
-            }
-
-            const imgurData = await imgurResponse.json();
-
-            finalUrl = imgurData.data.link; // Get the Imgur URL
-
-            // Replace .jpeg with .png in the Imgur URL if necessary
-            if (finalUrl.endsWith(".jpeg")) {
-                finalUrl = finalUrl.replace(".jpeg", ".png");
-            }
-        } else {
-            // If no image is provided, use the provided URL
-            console.log("Using provided URL...");
-            finalUrl = url;
-
-            // Replace .jpeg with .png in the provided URL if necessary
-            if (finalUrl.endsWith(".jpeg")) {
-                finalUrl = finalUrl.replace(".jpeg", ".png");
-            }
+        // Check if the URL ends with .jpeg and replace it with .png
+        let finalUrl = url;
+        if (finalUrl.endsWith(".jpeg")) {
+            finalUrl = finalUrl.replace(".jpeg", ".png");
         }
 
         // Connect to MongoDB
@@ -84,7 +54,7 @@ export default async function handler(req, res) {
             id: nanoid(),
             name,
             owner,
-            url: finalUrl, // Either Imgur URL or modified provided URL
+            url: finalUrl, // Final validated and modified URL
             createdAt: new Date(),
         };
 

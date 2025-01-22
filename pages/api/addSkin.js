@@ -1,7 +1,11 @@
 import { MongoClient } from "mongodb";
-import { nanoid } from "nanoid"; // Use nanoid for generating unique IDs
+import { nanoid } from "nanoid";
+import fetch from "node-fetch"; // Ensure node-fetch is installed
 
-const MONGO_URI = process.env.MONGO_URI; // Ensure this is set in the environment variables
+// Environment variables
+const MONGO_URI = process.env.MONGO_URI; // MongoDB connection string
+const IMGUR_CLIENT_ID = process.env.IMGUR_CLIENT_ID; // Imgur Client ID for non-authenticated uploads
+
 let cachedClient = null;
 
 export default async function handler(req, res) {
@@ -11,48 +15,78 @@ export default async function handler(req, res) {
         res.setHeader("Access-Control-Allow-Methods", "POST");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-        // Only allow POST requests
         if (req.method !== "POST") {
-            res.setHeader("Allow", ["POST"]);
-            return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+            return res.status(405).json({ error: "Method Not Allowed" });
         }
 
-        if (!MONGO_URI) {
-            throw new Error("MONGO_URI environment variable is not defined");
+        const { name, owner, image, url } = req.body;
+
+        // Validate required fields
+        if (!name || !owner || (!image && !url)) {
+            return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // Connect to MongoDB if not already connected
-        if (!cachedClient) {
-            cachedClient = await MongoClient.connect(MONGO_URI, { useUnifiedTopology: true });
-        }
+        let finalUrl;
 
-        const db = cachedClient.db("SkinList"); // Database name
-        const collection = db.collection("skins"); // Collection name
+        // If an image is provided, upload it to Imgur
+        if (image) {
+            console.log("Uploading image to Imgur...");
 
-        // Parse and validate request body
-        const { name, url } = req.body;
-        if (!name || !url) {
-            return res.status(400).json({ error: "Fields 'name' and 'url' are required." });
-        }
-
-        // Validate URL format
-        const validImgurUrl = /^https:\/\/i\.imgur\.com\/.*\.png$/;
-        if (!validImgurUrl.test(url)) {
-            return res.status(400).json({
-                error: "URL must start with 'https://i.imgur.com' and end with '.png'.",
+            const imgurResponse = await fetch("https://api.imgur.com/3/image", {
+                method: "POST",
+                headers: {
+                    Authorization: `Client-ID ${IMGUR_CLIENT_ID}`, // Use Client-ID for non-authenticated uploads
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ image, type: "base64" }), // Image in Base64 format
             });
+
+            const imgurData = await imgurResponse.json();
+
+            if (!imgurData.success) {
+                console.error("Imgur upload failed:", imgurData);
+                return res.status(500).json({ error: "Failed to upload image to Imgur" });
+            }
+
+            finalUrl = imgurData.data.link; // Get the Imgur URL
+
+            // Replace .jpeg with .png in the Imgur URL if necessary
+            if (finalUrl.endsWith(".jpeg")) {
+                finalUrl = finalUrl.replace(".jpeg", ".png");
+            }
+        } else {
+            // If no image is provided, use the provided URL
+            console.log("Using provided URL...");
+            finalUrl = url;
+
+            // Replace .jpeg with .png in the provided URL if necessary
+            if (finalUrl.endsWith(".jpeg")) {
+                finalUrl = finalUrl.replace(".jpeg", ".png");
+            }
         }
 
-        // Generate a random string for _id
-        const _id = nanoid(10); // Generates a random string with a length of 10 characters
+        // Connect to MongoDB
+        const client = cachedClient || new MongoClient(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+        if (!cachedClient) await client.connect();
+        cachedClient = client;
 
-        // Insert new document
-        const newSkin = { _id, name, url, createdAt: new Date() };
-        const result = await collection.insertOne(newSkin);
+        const db = client.db("snay");
+        const skinsCollection = db.collection("skins");
 
-        return res.status(201).json({ message: "Skin added successfully.", id: result.insertedId });
+        // Create the skin entry
+        const skinData = {
+            id: nanoid(),
+            name,
+            owner,
+            url: finalUrl, // Either Imgur URL or modified provided URL
+            createdAt: new Date(),
+        };
+
+        await skinsCollection.insertOne(skinData);
+
+        return res.status(200).json({ success: true, id: skinData.id, imageUrl: finalUrl });
     } catch (error) {
-        console.error("Error handling request:", error);
-        res.status(500).json({ error: error.message || "Internal Server Error" });
+        console.error("API error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 }

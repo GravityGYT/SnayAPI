@@ -29,15 +29,15 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // Validate that the URL starts with https://i.imgur.com
-        if (!url.startsWith("https://i.imgur.com")) {
-            return res.status(400).json({ error: "URL must start with https://i.imgur.com" });
+        // Ensure the URL starts with https://i.imgur.com
+        if (!url.startsWith('https://i.imgur.com')) {
+            return res.status(400).json({ error: "URL must start with 'https://i.imgur.com'" });
         }
 
-        // Check if the URL ends with .jpeg and replace it with .png
+        // Allow URLs ending with .png, .jpeg, or .jpg, and convert .jpeg/.jpg to .png
         let finalUrl = url;
-        if (finalUrl.endsWith(".jpeg")) {
-            finalUrl = finalUrl.replace(".jpeg", ".png");
+        if (finalUrl.endsWith('.jpeg') || finalUrl.endsWith('.jpg')) {
+            finalUrl = finalUrl.replace(/\.jpe?g$/, '.png'); // Replace .jpeg/.jpg with .png
         }
 
         // Connect to MongoDB

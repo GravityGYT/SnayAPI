@@ -1,46 +1,30 @@
 import { MongoClient } from "mongodb";
 import { nanoid } from "nanoid";
 
-// Environment variables
-const MONGO_URI = process.env.MONGO_URI; // MongoDB connection string
+const MONGO_URI = process.env.MONGO_URI;
 
 let cachedClient = null;
 
 export default async function handler(req, res) {
-    // Add CORS headers
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    // Handle preflight OPTIONS request
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
-
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method Not Allowed" });
-    }
+    if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
     try {
         const { name, owner, url } = req.body;
 
-        // Validate required fields
-        if (!name || !owner || !url) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
-
-        // Ensure the URL starts with https://i.imgur.com
-        if (!url.startsWith('https://i.imgur.com')) {
+        if (!name || !owner || !url.startsWith('https://i.imgur.com')) {
             return res.status(400).json({ error: "URL must start with 'https://i.imgur.com'" });
         }
 
-        // Allow URLs ending with .png, .jpeg, or .jpg, and convert .jpeg/.jpg to .png
         let finalUrl = url;
         if (finalUrl.endsWith('.jpeg') || finalUrl.endsWith('.jpg')) {
-            finalUrl = finalUrl.replace(/\.jpe?g$/, '.png'); // Replace .jpeg/.jpg with .png
+            finalUrl = finalUrl.replace(/\.jpe?g$/, '.png');
         }
 
-        // Connect to MongoDB
         if (!cachedClient) {
             cachedClient = new MongoClient(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
             await cachedClient.connect();
@@ -49,20 +33,18 @@ export default async function handler(req, res) {
         const db = cachedClient.db("snay");
         const skinsCollection = db.collection("skins");
 
-        // Create the skin entry
         const skinData = {
             id: nanoid(),
             name,
             owner,
-            url: finalUrl, // Final validated and modified URL
+            url: finalUrl,
             createdAt: new Date(),
         };
 
         await skinsCollection.insertOne(skinData);
-
         return res.status(200).json({ success: true, id: skinData.id, imageUrl: finalUrl });
     } catch (error) {
-        console.error("API error:", error);
+        console.error(error);
         return res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 }

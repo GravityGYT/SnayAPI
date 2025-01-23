@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
-import { nanoid } from "nanoid"; // Use nanoid for generating unique IDs
+import { nanoid } from "nanoid";
 
-const MONGO_URI = process.env.MONGO_URI; // Ensure this is set in the environment variables
+const MONGO_URI = process.env.MONGO_URI; // MongoDB connection string
 let cachedClient = null;
 
 export default async function handler(req, res) {
@@ -34,8 +34,9 @@ export default async function handler(req, res) {
         const db = cachedClient.db("SkinList"); // Database name
         const collection = db.collection("skins"); // Collection name
 
-        // Parse and validate request body
-        const { name, url } = req.body;
+        // Parse and validate the POST request body
+        const { name, url, owner } = req.body;
+
         if (!name || !url) {
             return res.status(400).json({ error: "Fields 'name' and 'url' are required." });
         }
@@ -54,14 +55,14 @@ export default async function handler(req, res) {
             finalUrl = finalUrl.replace(/\.jpe?g$/, ".png");
         }
 
-        // Generate a random string for _id
-        const _id = nanoid(10); // Generates a random string with a length of 10 characters
+        // Insert new skin into the database
+        const newSkin = { name, url: finalUrl, owner, createdAt: new Date() };
+        const result = await collection.insertOne(newSkin);
 
-        // Insert new document
-        const newSkin = { _id, name, url: finalUrl, createdAt: new Date() };
-        await collection.insertOne(newSkin);
-
-        return res.status(201).json({ message: "Skin added successfully.", id: _id, url: finalUrl });
+        return res.status(201).json({
+            message: "Skin added successfully.",
+            id: result.insertedId,
+        });
     } catch (error) {
         console.error("Error handling request:", error);
         res.status(500).json({ error: error.message || "Internal Server Error" });

@@ -36,27 +36,21 @@ export default async function handler(req, res) {
         }
 
         // Validate URL format
-        const validImgurUrl = /^https:\/\/i\.imgur\.com\/.*\.(png|jpeg|jpg)$/;
+        const validImgurUrl = /^https:\/\/i\.imgur\.com\/.*\.png$/;
         if (!validImgurUrl.test(url)) {
             return res.status(400).json({
-                error: "URL must start with 'https://i.imgur.com' and end with '.png', '.jpeg', or '.jpg'.",
+                error: "URL must start with 'https://i.imgur.com' and end with '.png'.",
             });
-        }
-
-        // Convert .jpeg or .jpg to .png
-        let finalUrl = url;
-        if (finalUrl.endsWith(".jpeg") || finalUrl.endsWith(".jpg")) {
-            finalUrl = finalUrl.replace(/\.jpe?g$/, ".png");
         }
 
         // Generate a random string for _id
         const _id = nanoid(10); // Generates a random string with a length of 10 characters
 
         // Insert new document
-        const newSkin = { _id, name, url: finalUrl, createdAt: new Date() };
+        const newSkin = { _id, name, url, createdAt: new Date() };
         const result = await collection.insertOne(newSkin);
 
-        return res.status(201).json({ message: "Skin added successfully.", id: _id, url: finalUrl });
+        return res.status(201).json({ message: "Skin added successfully.", id: result.insertedId });
     } catch (error) {
         console.error("Error handling request:", error);
         res.status(500).json({ error: error.message || "Internal Server Error" });

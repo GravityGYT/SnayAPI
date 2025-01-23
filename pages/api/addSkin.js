@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         const newSkin = { _id, name, url: finalUrl, createdAt: new Date() };
         const result = await collection.insertOne(newSkin);
 
-        return res.status(201).json({ message: "Skin added successfully.", id: result.insertedId });
+        return res.status(201).json({ message: "Skin added successfully.", id: _id, url: finalUrl });
     } catch (error) {
         console.error("Error handling request:", error);
         res.status(500).json({ error: error.message || "Internal Server Error" });

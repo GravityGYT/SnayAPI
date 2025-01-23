@@ -8,8 +8,13 @@ export default async function handler(req, res) {
     try {
         // Add CORS headers
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "POST");
+        res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+        // Handle preflight OPTIONS request
+        if (req.method === "OPTIONS") {
+            return res.status(200).end();
+        }
 
         // Only allow POST requests
         if (req.method !== "POST") {
@@ -54,7 +59,7 @@ export default async function handler(req, res) {
 
         // Insert new document
         const newSkin = { _id, name, url: finalUrl, createdAt: new Date() };
-        const result = await collection.insertOne(newSkin);
+        await collection.insertOne(newSkin);
 
         return res.status(201).json({ message: "Skin added successfully.", id: _id, url: finalUrl });
     } catch (error) {
